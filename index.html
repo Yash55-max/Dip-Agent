@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DLP Agent — System Documentation</title>
+<style>
+  :root {
+    --bg: #0B0E14;
+    --bg-raised: #11151D;
+    --bg-card: #141922;
+    --border: #232A38;
+    --border-soft: #1A2029;
+    --text: #DDE3ED;
+    --text-dim: #8993A6;
+    --text-faint: #5B6477;
+    --cyan: #4FD2E0;
+    --cyan-dim: #2A6E78;
+    --green: #5FC98D;
+    --green-dim: #2B5A40;
+    --amber: #E0A94F;
+    --red: #E0625C;
+    --red-dim: #5A2B2B;
+    --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    margin: 0;
+    line-height: 1.6;
+    font-size: 16px;
+  }
+
+  ::selection { background: var(--cyan-dim); color: white; }
+
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  code, .mono { font-family: var(--mono); }
+
+  /* ---------- Layout ---------- */
+  .shell {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 32px 20px;
+    border-right: 1px solid var(--border-soft);
+  }
+
+  nav.toc .brand {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    margin-bottom: 28px;
+    text-transform: uppercase;
+  }
+
+  nav.toc a {
+    display: block;
+    color: var(--text-dim);
+    font-size: 13.5px;
+    padding: 5px 0;
+    border-left: 2px solid transparent;
+    padding-left: 12px;
+    margin-left: -13px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  nav.toc a:hover { color: var(--text); text-decoration: none; }
+  nav.toc a.active { color: var(--cyan); border-left-color: var(--cyan); }
+
+  nav.toc .group-label {
+    font-size: 11px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 20px 0 6px;
+  }
+
+  main {
+    padding: 56px 56px 120px;
+    min-width: 0;
+  }
+
+  @media (max-width: 880px) {
+    .shell { grid-template-columns: 1fr; }
+    nav.toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border-soft); }
+    main { padding: 32px 20px 80px; }
+  }
+
+  section { margin-bottom: 76px; scroll-margin-top: 20px; }
+
+  /* ---------- Header ---------- */
+  .doc-header { margin-bottom: 64px; }
+  .doc-header .eyebrow {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--cyan);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .doc-header h1 {
+    font-size: 38px;
+    font-weight: 700;
+    margin: 0 0 14px;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  .doc-header p.lede {
+    font-size: 17px;
+    color: var(--text-dim);
+    max-width: 640px;
+    margin: 0 0 24px;
+  }
+  .doc-header .meta-row {
+    display: flex;
+    gap: 24px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-faint);
+    flex-wrap: wrap;
+  }
+
+  h2 {
+    font-size: 23px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.005em;
+  }
+  h2 .num { color: var(--text-faint); font-family: var(--mono); font-weight: 500; margin-right: 10px; font-size: 0.8em; }
+  .section-intro { color: var(--text-dim); max-width: 720px; margin: 0 0 28px; font-size: 15px; }
+  h3 { font-size: 16.5px; font-weight: 650; margin: 28px 0 10px; color: var(--text); }
+  p { color: var(--text-dim); max-width: 760px; }
+  p strong { color: var(--text); font-weight: 600; }
+
+  /* ---------- Status pills (used everywhere, this is the honesty mechanism) ---------- */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+  .status.built { background: rgba(95,201,141,0.08); color: var(--green); border-color: var(--green-dim); }
+  .status.built::before { background: var(--green); }
+  .status.designed { background: rgba(224,169,79,0.08); color: var(--amber); border-color: #5A4A2B; }
+  .status.designed::before { background: var(--amber); }
+  .status.gap { background: rgba(224,98,92,0.08); color: var(--red); border-color: var(--red-dim); }
+  .status.gap::before { background: var(--red); }
+
+  .status-legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-soft);
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 36px;
+    font-size: 13px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+  .status-legend .legend-label { font-family: var(--mono); font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* ---------- Cards / grids ---------- */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0; }
+  @media (max-width: 720px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  .stack-card { display: flex; flex-direction: column; gap: 10px; }
+  .stack-card .stack-head { display: flex; justify-content: space-between; align-items: center; }
+  .stack-card .stack-title { font-weight: 650; font-size: 14.5px; }
+  .stack-card .stack-tech { font-family: var(--mono); font-size: 12.5px; color: var(--cyan); }
+  .stack-card .stack-why { font-size: 13.5px; color: var(--text-dim); margin: 0; }
+
+  /* ---------- Tables ---------- */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 28px; font-size: 13.5px; }
+  th { text-align: left; color: var(--text-faint); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 14px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--border-soft); color: var(--text-dim); vertical-align: top; }
+  td:first-child, th:first-child { padding-left: 0; }
+  tr:last-child td { border-bottom: none; }
+  td.proc { font-family: var(--mono); color: var(--text); white-space: nowrap; }
+
+  /* ---------- Diagram wrappers ---------- */
+  .diagram-wrap {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 28px;
+    margin: 20px 0 28px;
+    overflow-x: auto;
+  }
+  .diagram-wrap svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .diagram-caption { font-size: 12.5px; color: var(--text-faint); margin-top: 14px; text-align: center; font-family: var(--mono); }
+
+  /* ---------- Challenges / security list ---------- */
+  .issue {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    background: var(--bg-card);
+  }
+  .issue.severity-high { border-left-color: var(--red); }
+  .issue.severity-med { border-left-color: var(--amber); }
+  .issue.severity-low { border-left-color: var(--cyan-dim); }
+  .issue-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .issue-title { font-weight: 650; font-size: 14.5px; color: var(--text); }
+  .issue-sev { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 3px; }
+  .severity-high .issue-sev { color: var(--red); background: rgba(224,98,92,0.1); }
+  .severity-med .issue-sev { color: var(--amber); background: rgba(224,169,79,0.1); }
+  .severity-low .issue-sev { color: var(--cyan); background: rgba(79,210,224,0.1); }
+  .issue p { margin: 0; font-size: 13.5px; }
+  .issue .mitigation { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-soft); font-size: 13px; }
+  .issue .mitigation .label { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ---------- Interactive demo ---------- */
+  .demo {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 28px;
+    margin: 20px 0 28px;
+  }
+  .demo-controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 24px; }
+  @media (max-width: 720px) { .demo-controls { grid-template-columns: 1fr; } }
+  .control-group { display: flex; flex-direction: column; gap: 6px; }
+  .control-group label { font-family: var(--mono); font-size: 11.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; }
+  .control-group label .val { color: var(--cyan); }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    background: var(--cyan);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+  select, .toggle-row { font-family: var(--mono); font-size: 13px; }
+  select {
+    background: var(--bg-card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 7px 10px;
+  }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; }
+  .checkbox-row input { accent-color: var(--cyan); }
+
+  .demo-result {
+    border-top: 1px solid var(--border);
+    padding-top: 22px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 720px) { .demo-result { grid-template-columns: 1fr; } }
+
+  .result-verdict {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .verdict-badge {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    padding: 14px 18px;
+    border-radius: 8px;
+    text-align: center;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+  }
+  .verdict-badge.none { background: rgba(95,201,141,0.08); color: var(--green); border: 1px solid var(--green-dim); }
+  .verdict-badge.monitor { background: rgba(79,210,224,0.08); color: var(--cyan); border: 1px solid var(--cyan-dim); }
+  .verdict-badge.kill { background: rgba(224,98,92,0.1); color: var(--red); border: 1px solid var(--red-dim); }
+  .verdict-badge.vetoed { background: rgba(224,169,79,0.1); color: var(--amber); border: 1px solid #5A4A2B; }
+
+  .score-bar-track {
+    height: 8px;
+    background: var(--bg-card);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.2s, background 0.2s;
+  }
+  .score-label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11.5px; color: var(--text-faint); }
+
+  .reasons-list {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    list-style: none;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .reasons-list li {
+    padding: 8px 10px;
+    background: var(--bg-card);
+    border-radius: 5px;
+    border-left: 2px solid var(--border);
+  }
+  .reasons-list li.kill-reason { border-left-color: var(--red); color: var(--red); }
+  .reasons-list li.veto-reason { border-left-color: var(--amber); color: var(--amber); }
+  .reasons-list li.protect-reason { border-left-color: var(--green); color: var(--green); }
+  .reasons-list .empty { color: var(--text-faint); font-style: italic; border-left-color: transparent; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--border-soft);
+    padding-top: 24px;
+    margin-top: 80px;
+    font-size: 12.5px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+  }
+
+  .scope-note {
+    font-size: 13px;
+    color: var(--text-faint);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: -8px 0 28px;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="toc" id="toc">
+    <div class="brand">DLP_AGENT // DOCS</div>
+    <a href="#overview">Overview</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#stack">Technology Stack</a>
+    <div class="group-label">Working of the System</div>
+    <a href="#flow">Detection Flow</a>
+    <a href="#demo">Live Decision Demo</a>
+    <a href="#whitelist">Admin Whitelist</a>
+    <div class="group-label">Risk Assessment</div>
+    <a href="#challenges">Challenges</a>
+    <a href="#security">Security Concerns</a>
+    <a href="#status">Build Status</a>
+  </nav>
+
+  <main>
+    <div class="doc-header">
+      <div class="eyebrow">System Documentation · Prototype</div>
+      <h1>Endpoint Data Leakage Prevention Agent</h1>
+      <p class="lede">A hierarchical multi-agent monitor for Windows that watches per-process CPU, RAM, memory, and network behavior, scores exfiltration risk, and terminates high-confidence threats — while refusing, by design, to ever kill core system or security software.</p>
+      <div class="meta-row">
+        <span>TARGET OS: WINDOWS</span>
+        <span>LANGUAGE: PYTHON</span>
+        <span>STATUS: CORE LOGIC BUILT &amp; TESTED · AGENTS DESIGNED, NOT BUILT</span>
+      </div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section id="overview">
+      <h2><span class="num">01</span>Overview</h2>
+      <p class="section-intro">This document describes a prototype data-leakage-prevention system: a main orchestrator agent supervising four specialized monitor agents, each watching one resource signal, scoring risk, and reporting up for a kill decision.</p>
+
+      <div class="scope-note">
+        <strong style="color:var(--text)">Read this before anything else:</strong> the system described below mixes code that exists and is tested with components that are designed on paper only. Every diagram and section below is labeled <span class="status built">Built</span> / <span class="status designed">Designed</span> / <span class="status gap">Gap</span> so it's clear which is which. Section 8 has the full breakdown.
+      </div>
+
+      <p>The original concept (admin-managed whitelist gating disk access, four LLM sub-agents reporting to a main orchestrator that terminates flagged processes) is, at the architecture level, similar in shape to commercial endpoint DLP / EDR products (Teramind, Varonis, CrowdStrike). Those products watch user behavior across broader channels (USB, email, cloud upload) and use proprietary ML; this prototype is narrower in scope — Windows process-resource telemetry only — and currently uses explicit rules rather than a trained model where the design calls for one.</p>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture">
+      <h2><span class="num">02</span>Architecture</h2>
+      <p class="section-intro">A main orchestrator process supervises four monitor agents. Each agent watches one signal, scores it independently, and reports a structured assessment upward. The orchestrator combines reports per-process, applies a final protected-process veto, and acts.</p>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 980 560" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#5B6477"/>
+            </marker>
+            <marker id="arrowUp" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#4FD2E0"/>
+            </marker>
+          </defs>
+
+          <!-- Admin -->
+          <rect x="760" y="20" width="180" height="56" rx="8" fill="#141922" stroke="#E0A94F" stroke-width="1.5"/>
+          <text x="850" y="44" text-anchor="middle" fill="#E0A94F" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">ADMIN</text>
+          <text x="850" y="60" text-anchor="middle" fill="#8993A6" font-family="JetBrains Mono, monospace" font-size="10">whitelist / blacklist</text>
+
+          <!-- Orchestrator -->
+          <rect x="390" y="120" width="200" height="64" rx="8" fill="#141922" stroke="#4FD2E0" stroke-width="2"/>
+          <text x="490" y="146" text-anchor="middle" fill="#DDE3ED" font-family="JetBrains Mono, monospace" font-size="13" font-weight="700">MAIN AGENT</text>
+          <text x="490" y="163" text-anchor="middle" fill="#8993A6" font-family="JetBrains Mono, monospace" font-size="10">orchestration · risk engine · kill veto</text>
+
+          <line x1="850" y1="76" x2="600" y2="135" stroke="#E0A94F" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow)"/>
+          <text x="730" y="100" fill="#E0A94F" font-family="JetBrains Mono, monospace" font-size="9.5">trust policy</text>
+
+          <!-- Sub agents -->
+          <g>
+            <rect x="60"  y="280" width="170" height="70" rx="8" fill="#141922" stroke="#232A38" stroke-width="1.5"/>
+            <rect x="270" y="280" width="170" height="70" rx="8" fill="#141922" stroke="#232A38" stroke-width="1.5"/>
+            <rect x="480" y="280" width="170" height="70" rx="8" fill="#141922" stroke="#232A38" stroke-width="1.5"/>
+            <rect x="690" y="280" width="170" height="70" rx="8" fill="#141922" stroke="#E0625C" stroke-width="1.5"/>
+
+            <text x="145" y="308" text-anchor="middle" fill="#DDE3ED" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">CPU AGENT</text>
+            <text x="145" y="324" text-anchor="middle" fill="#5B6477" font-family="JetBrains Mono, monospace" font-size="9.5">monitors CPU spikes</text>
+            <text x="145" y="339" text-anchor="middle" fill="#5B6477" font-family="JetBrains Mono, monospace" font-size="9">weight 0.15 · never kills alone</text>
+
+            <text x="355" y="308" text-anchor="middle" fill="#DDE3ED" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">RAM AGENT</text>
+            <text x="355" y="324" text-anchor="middle" fill="#5B6477" font-family="JetBrains Mono, monospace" font-size="9.5">monitors RAM usage</text>
+            <text x="355" y="339" text-anchor="middle" fill="#5B6477" font-family="JetBrains Mono, monospace" font-size="9">weight 0.15 · never kills alone</text>
+
+            <text x="565" y="308" text-anchor="middle" fill="#DDE3ED" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">MEMORY AGENT</text>
+            <text x="565" y="324" text-anchor="middle" fill="#5B6477" font-family="JetBrains Mono, monospace" font-size="9.5">monitors working set</text>
+            <text x="565" y="339" text-anchor="middle" fill="#5B6477" font-family="JetBrains Mono, monospace" font-size="9">weight 0.10 · never kills alone</text>
+
+            <text x="775" y="308" text-anchor="middle" fill="#FFFFFF" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">NETWORK AGENT</text>
+            <text x="775" y="324" text-anchor="middle" fill="#E0625C" font-family="JetBrains Mono, monospace" font-size="9.5">monitors net activity</text>
+            <text x="775" y="339" text-anchor="middle" fill="#E0625C" font-family="JetBrains Mono, monospace" font-size="9">weight 0.60 · required for any kill</text>
+          </g>
+
+          <!-- lines orchestrator -> agents -->
+          <line x1="440" y1="184" x2="145" y2="280" stroke="#5B6477" stroke-width="1.2" marker-end="url(#arrow)"/>
+          <line x1="470" y1="184" x2="355" y2="280" stroke="#5B6477" stroke-width="1.2" marker-end="url(#arrow)"/>
+          <line x1="510" y1="184" x2="565" y2="280" stroke="#5B6477" stroke-width="1.2" marker-end="url(#arrow)"/>
+          <line x1="540" y1="184" x2="775" y2="280" stroke="#5B6477" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+          <!-- lines agents -> orchestrator (reports up) -->
+          <line x1="175" y1="280" x2="455" y2="190" stroke="#4FD2E0" stroke-width="1.2" marker-end="url(#arrowUp)"/>
+          <line x1="385" y1="280" x2="480" y2="190" stroke="#4FD2E0" stroke-width="1.2" marker-end="url(#arrowUp)"/>
+          <line x1="595" y1="280" x2="505" y2="190" stroke="#4FD2E0" stroke-width="1.2" marker-end="url(#arrowUp)"/>
+          <line x1="725" y1="280" x2="530" y2="190" stroke="#4FD2E0" stroke-width="1.2" marker-end="url(#arrowUp)"/>
+
+          <!-- Task Manager data source -->
+          <rect x="350" y="400" width="280" height="50" rx="8" fill="#0B0E14" stroke="#232A38" stroke-width="1.2" stroke-dasharray="4,3"/>
+          <text x="490" y="430" text-anchor="middle" fill="#5B6477" font-family="JetBrains Mono, monospace" font-size="11">Windows process table (Task Manager-equivalent data)</text>
+
+          <line x1="145" y1="350" x2="430" y2="400" stroke="#232A38" stroke-width="1"/>
+          <line x1="355" y1="350" x2="460" y2="400" stroke="#232A38" stroke-width="1"/>
+          <line x1="565" y1="350" x2="520" y2="400" stroke="#232A38" stroke-width="1"/>
+          <line x1="775" y1="350" x2="550" y2="400" stroke="#232A38" stroke-width="1"/>
+
+          <!-- Protected veto -->
+          <rect x="730" y="120" width="190" height="64" rx="8" fill="#141922" stroke="#5FC98D" stroke-width="1.5"/>
+          <text x="825" y="146" text-anchor="middle" fill="#5FC98D" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">PROTECTED LIST</text>
+          <text x="825" y="163" text-anchor="middle" fill="#8993A6" font-family="JetBrains Mono, monospace" font-size="9.5">final veto · core OS + AV</text>
+          <line x1="730" y1="152" x2="595" y2="152" stroke="#5FC98D" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <!-- Action -->
+          <rect x="390" y="490" width="200" height="56" rx="8" fill="#1A0F0F" stroke="#E0625C" stroke-width="1.5"/>
+          <text x="490" y="513" text-anchor="middle" fill="#E0625C" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">TERMINATE PROCESS</text>
+          <text x="490" y="529" text-anchor="middle" fill="#8993A6" font-family="JetBrains Mono, monospace" font-size="9.5">only if: network-critical + score ≥ 0.6 + not protected</text>
+          <line x1="490" y1="184" x2="490" y2="490" stroke="#E0625C" stroke-width="1.2" stroke-dasharray="2,3" marker-end="url(#arrow)"/>
+        </svg>
+        <div class="diagram-caption">fig 1 — agent hierarchy and data flow. cyan = reports up. red = kill path, gated by the green veto box.</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="margin-top:0">Main Agent (Orchestrator) <span class="status designed">Designed</span></h3>
+          <p style="font-size:13.5px">Spawns and supervises the four monitor agents, collects per-process <code>SignalReport</code>s, calls the risk engine, applies the protected-process veto, and executes (or refuses) termination. Process supervision and the OS-level kill call are not yet built — these need a real Windows process to implement and verify.</p>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">Risk Engine <span class="status built">Built</span></h3>
+          <p style="font-size:13.5px">Pure Python, no OS dependency. Aggregates signal reports into a weighted, time-decaying risk score per process, decides kill eligibility, and is the seam where a trained model will eventually replace rule-based scoring. 12/12 unit tests passing.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STACK -->
+    <section id="stack">
+      <h2><span class="num">03</span>Technology Stack</h2>
+      <p class="section-intro">What each piece runs on, and why — including the parts not yet implemented.</p>
+
+      <div class="grid-2">
+        <div class="card stack-card">
+          <div class="stack-head"><span class="stack-title">Core logic</span><span class="status built">Built</span></div>
+          <div class="stack-tech">Python 3.12, stdlib only (dataclasses, enum)</div>
+          <p class="stack-why">No OS dependency by design — keeps the decision logic testable without a Windows machine, and portable if the agent layer ever needs to target macOS/Linux too.</p>
+        </div>
+        <div class="card stack-card">
+          <div class="stack-head"><span class="stack-title">Process telemetry</span><span class="status designed">Designed</span></div>
+          <div class="stack-tech">psutil</div>
+          <p class="stack-why">Cross-platform process/CPU/RAM inspection. Confirmed available in this environment, not yet confirmed against real Windows process behavior — per-process network attribution in particular needs verification.</p>
+        </div>
+        <div class="card stack-card">
+          <div class="stack-head"><span class="stack-title">Windows-native APIs</span><span class="status designed">Designed</span></div>
+          <div class="stack-tech">pywin32</div>
+          <p class="stack-why">Needed for service registration, privilege handling, and anything psutil doesn't expose (e.g. precise executable path / signature verification for the protected-process check).</p>
+        </div>
+        <div class="card stack-card">
+          <div class="stack-head"><span class="stack-title">Network attribution</span><span class="status gap">Gap</span></div>
+          <div class="stack-tech">ETW (Event Tracing for Windows) — likely needed</div>
+          <p class="stack-why">Per-process bandwidth and destination IP are not cleanly exposed by psutil alone. ETW is the realistic path to accurate per-process network data on Windows; this adds real complexity not yet scoped in detail.</p>
+        </div>
+        <div class="card stack-card">
+          <div class="stack-head"><span class="stack-title">Detection model</span><span class="status gap">Gap</span></div>
+          <div class="stack-tech">Rule-based now → open-source model later</div>
+          <p class="stack-why">No labeled training data exists yet. The plan is to run the rule-based engine in production first, log its decisions and corrections, and use that log as training data for a future classifier — not to train a model on zero data today.</p>
+        </div>
+        <div class="card stack-card">
+          <div class="stack-head"><span class="stack-title">Deployment</span><span class="status gap">Gap</span></div>
+          <div class="stack-tech">Windows Service (planned)</div>
+          <p class="stack-why">Running as a visible console app means any malicious process can see and kill the monitor before it acts. Service-mode deployment is necessary for the self-protection requirement, not yet implemented.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FLOW -->
+    <section id="flow">
+      <h2><span class="num">04</span>Detection Flow</h2>
+      <p class="section-intro">How one evaluation cycle moves from raw signal to a kill/no-kill decision. This sequence matches the tested logic in <code>risk_engine.py</code> exactly.</p>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 940 760" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="flowArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#5B6477"/>
+            </marker>
+          </defs>
+
+          <!-- step boxes down the middle -->
+          <g font-family="JetBrains Mono, monospace">
+            <rect x="320" y="10" width="300" height="50" rx="6" fill="#141922" stroke="#232A38"/>
+            <text x="470" y="40" text-anchor="middle" fill="#DDE3ED" font-size="12.5" font-weight="600">4 agents emit SignalReports</text>
+
+            <line x1="470" y1="60" x2="470" y2="92" stroke="#5B6477" marker-end="url(#flowArrow)"/>
+            <rect x="320" y="92" width="300" height="50" rx="6" fill="#141922" stroke="#232A38"/>
+            <text x="470" y="122" text-anchor="middle" fill="#DDE3ED" font-size="12.5" font-weight="600">grouped per-PID, per cycle</text>
+
+            <line x1="470" y1="142" x2="470" y2="174" stroke="#5B6477" marker-end="url(#flowArrow)"/>
+            <rect x="290" y="174" width="360" height="56" rx="6" fill="#141922" stroke="#4FD2E0"/>
+            <text x="470" y="198" text-anchor="middle" fill="#4FD2E0" font-size="12.5" font-weight="700">apply per-signal thresholds</text>
+            <text x="470" y="216" text-anchor="middle" fill="#8993A6" font-size="9.5">CPU≥85% · RAM≥1500MB · MEM≥1500MB · NET≥500KB/s</text>
+
+            <line x1="470" y1="230" x2="470" y2="262" stroke="#5B6477" marker-end="url(#flowArrow)"/>
+            <rect x="290" y="262" width="360" height="56" rx="6" fill="#141922" stroke="#232A38"/>
+            <text x="470" y="286" text-anchor="middle" fill="#DDE3ED" font-size="12.5" font-weight="600">accumulate weighted background score</text>
+            <text x="470" y="304" text-anchor="middle" fill="#8993A6" font-size="9.5">net 0.60 / cpu 0.15 / ram 0.15 / mem 0.10, decays over time</text>
+
+            <line x1="470" y1="318" x2="470" y2="350" stroke="#5B6477" marker-end="url(#flowArrow)"/>
+            <rect x="270" y="350" width="400" height="56" rx="6" fill="#141922" stroke="#E0A94F"/>
+            <text x="470" y="374" text-anchor="middle" fill="#E0A94F" font-size="12.5" font-weight="700">apply admin whitelist / blacklist</text>
+            <text x="470" y="392" text-anchor="middle" fill="#8993A6" font-size="9.5">whitelisted → score ×0.2 · blacklisted → score +0.5</text>
+
+            <line x1="470" y1="406" x2="470" y2="438" stroke="#5B6477" marker-end="url(#flowArrow)"/>
+            <rect x="290" y="438" width="360" height="64" rx="6" fill="#141922" stroke="#E0625C"/>
+            <text x="470" y="462" text-anchor="middle" fill="#E0625C" font-size="12.5" font-weight="700">should_kill?</text>
+            <text x="470" y="480" text-anchor="middle" fill="#8993A6" font-size="9.5">network-critical AND not whitelisted</text>
+            <text x="470" y="494" text-anchor="middle" fill="#8993A6" font-size="9.5">AND (blacklisted OR score ≥ 0.6)</text>
+
+            <line x1="470" y1="502" x2="470" y2="534" stroke="#5B6477" marker-end="url(#flowArrow)"/>
+            <rect x="250" y="534" width="440" height="64" rx="6" fill="#141922" stroke="#5FC98D" stroke-width="2"/>
+            <text x="470" y="558" text-anchor="middle" fill="#5FC98D" font-size="12.5" font-weight="700">protected-process veto (final check)</text>
+            <text x="470" y="576" text-anchor="middle" fill="#8993A6" font-size="9.5">core OS / verified AV → kill is overridden, unconditionally</text>
+            <text x="470" y="590" text-anchor="middle" fill="#8993A6" font-size="9.5">spoofed name w/ wrong path → NOT protected, risk escalated instead</text>
+
+            <line x1="400" y1="598" x2="330" y2="640" stroke="#5B6477" marker-end="url(#flowArrow)"/>
+            <line x1="540" y1="598" x2="610" y2="640" stroke="#5B6477" marker-end="url(#flowArrow)"/>
+
+            <rect x="150" y="640" width="280" height="56" rx="6" fill="#0F1A14" stroke="#5FC98D"/>
+            <text x="290" y="664" text-anchor="middle" fill="#5FC98D" font-size="12.5" font-weight="700">NO KILL</text>
+            <text x="290" y="680" text-anchor="middle" fill="#8993A6" font-size="9.5">log assessment, escalate score</text>
+
+            <rect x="510" y="640" width="280" height="56" rx="6" fill="#1A0F0F" stroke="#E0625C"/>
+            <text x="650" y="664" text-anchor="middle" fill="#E0625C" font-size="12.5" font-weight="700">TERMINATE</text>
+            <text x="650" y="680" text-anchor="middle" fill="#8993A6" font-size="9.5">kill process, write audit log entry</text>
+          </g>
+        </svg>
+        <div class="diagram-caption">fig 2 — one detection cycle, signal report to terminal action</div>
+      </div>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <section id="demo">
+      <h2><span class="num">05</span>Live Decision Demo</h2>
+      <p class="section-intro">This reproduces the exact logic in <code>core/risk_engine.py</code> and <code>core/protected_processes.py</code> client-side, so you can see how a kill decision actually resolves. Adjust the signals and watch the verdict change.</p>
+
+      <div class="demo">
+        <div class="demo-controls">
+          <div class="control-group">
+            <label>Process name <span class="val mono" id="procNameLabel">suspicious.exe</span></label>
+            <select id="procName">
+              <option value="suspicious.exe">suspicious.exe (unknown)</option>
+              <option value="MsMpEng.exe|defender">MsMpEng.exe (real Defender path)</option>
+              <option value="MsMpEng.exe|temp">MsMpEng.exe (running from Temp — spoofed)</option>
+              <option value="svchost.exe|unknown">svchost.exe (no path info)</option>
+              <option value="backup_tool.exe">backup_tool.exe</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>CPU usage <span class="val" id="cpuVal">40%</span></label>
+            <input type="range" id="cpu" min="0" max="100" value="40">
+          </div>
+          <div class="control-group">
+            <label>RAM usage (MB) <span class="val" id="ramVal">400</span></label>
+            <input type="range" id="ram" min="0" max="4000" value="400">
+          </div>
+          <div class="control-group">
+            <label>Network rate (KB/s) <span class="val" id="netVal">800</span></label>
+            <input type="range" id="net" min="0" max="3000" value="800">
+          </div>
+          <div class="control-group">
+            <label style="display:block">Network destination</label>
+            <div class="checkbox-row"><input type="checkbox" id="destKnown"> <span class="mono" style="font-size:13px;color:var(--text-dim)">destination is a known/recognized host</span></div>
+          </div>
+          <div class="control-group">
+            <label style="display:block">Admin policy</label>
+            <div class="checkbox-row"><input type="checkbox" id="isWhitelisted"> <span class="mono" style="font-size:13px;color:var(--text-dim)">whitelisted by admin</span></div>
+          </div>
+        </div>
+
+        <div class="demo-result">
+          <div class="result-verdict">
+            <div class="verdict-badge none" id="verdictBadge">NO RISK</div>
+            <div>
+              <div class="score-label"><span>RISK SCORE</span><span id="scoreText">0.00</span></div>
+              <div class="score-bar-track"><div class="score-bar-fill" id="scoreBar" style="width:0%; background:#5FC98D"></div></div>
+            </div>
+            <div style="font-size:12px; color:var(--text-faint); font-family:var(--mono)">Mirrors RiskEngine.score_process() — same thresholds, same weights, same veto order.</div>
+          </div>
+          <div>
+            <ul class="reasons-list" id="reasonsList"><li class="empty">no thresholds exceeded</li></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHITELIST -->
+    <section id="whitelist">
+      <h2><span class="num">06</span>Admin Whitelist / Blacklist <span class="status designed">Designed, not built</span></h2>
+      <p class="section-intro">Per the original design: the admin maintains a list of trusted applications. Installed software is scanned and classified into a whitelist or blacklist; blacklisted applications are denied disk access.</p>
+      <table>
+        <thead><tr><th>Classification</th><th>Effect on risk score</th><th>Effect on disk access</th></tr></thead>
+        <tbody>
+          <tr><td class="proc">Whitelisted</td><td>Score multiplied ×0.2 — strongly dampened</td><td>Unrestricted</td></tr>
+          <tr><td class="proc">Unclassified</td><td>No adjustment — scored on signals alone</td><td>Unrestricted (default)</td></tr>
+          <tr><td class="proc">Blacklisted</td><td>Score +0.5 flat addition</td><td>Denied — see gap below</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:13.5px">Note: full per-app disk-access blocking on Windows realistically requires either a kernel-mode minifilter driver (heavy: C/C++, code-signing, real driver-dev expertise) or a lighter approximation using NTFS ACLs and process termination. The lighter approximation is the realistic starting point for a prototype — this is flagged again under Challenges below.</p>
+    </section>
+
+    <!-- CHALLENGES -->
+    <section id="challenges">
+      <h2><span class="num">07</span>Challenges</h2>
+      <p class="section-intro">Engineering obstacles specific to this design, independent of security risk (see next section for that).</p>
+
+      <div class="issue severity-high">
+        <div class="issue-head"><span class="issue-title">Per-process network attribution on Windows is not trivial</span><span class="issue-sev">High</span></div>
+        <p><code>psutil</code> exposes open connections per process but not clean, sustained per-process bandwidth or reliable destination-reputation data. Accurate values likely require ETW or a kernel-level network filter — both substantially more complex than the rest of the stack.</p>
+      </div>
+
+      <div class="issue severity-high">
+        <div class="issue-head"><span class="issue-title">No labeled data exists for the planned model</span><span class="issue-sev">High</span></div>
+        <p>The original design calls for training an open-source model on task-manager data. There is currently no dataset of labeled malicious vs. benign process behavior to train on — it has to be generated by running the rule-based system first and logging outcomes, which takes real operating time before any model work can start.</p>
+      </div>
+
+      <div class="issue severity-high">
+        <div class="issue-head"><span class="issue-title">False positives have real cost, not just annoyance</span><span class="issue-sev">High</span></div>
+        <p>CPU/RAM/Memory spikes are extremely common during legitimate work (compiling, gaming, antivirus scans, backups). A kill policy that's too aggressive erodes trust in the tool fast, or worse, disables legitimate software the user depends on.</p>
+      </div>
+
+      <div class="issue severity-med">
+        <div class="issue-head"><span class="issue-title">Per-app disk-access blocking is a much bigger build than it sounds</span><span class="issue-sev">Medium</span></div>
+        <p>True OS-level enforcement needs a minifilter driver. That's a different skillset and a much longer build than the agent/orchestrator layer — worth scoping as a separate phase, not folded silently into "the app."</p>
+      </div>
+
+      <div class="issue severity-med">
+        <div class="issue-head"><span class="issue-title">Privilege requirements limit how the tool can run</span><span class="issue-sev">Medium</span></div>
+        <p>Reading other users' process data and terminating processes needs elevated/admin privileges on Windows. The tool can't quietly run at standard-user level; this has UX and deployment implications (UAC prompts, service installation).</p>
+      </div>
+
+      <div class="issue severity-low">
+        <div class="issue-head"><span class="issue-title">Threshold tuning has no shortcut</span><span class="issue-sev">Low</span></div>
+        <p>The numeric thresholds in the risk engine are reasonable starting points, not validated values. They need real-world tuning against actual usage on the target machine before they can be trusted.</p>
+      </div>
+    </section>
+
+    <!-- SECURITY -->
+    <section id="security">
+      <h2><span class="num">08</span>Security Concerns</h2>
+      <p class="section-intro">Risks specific to the fact that this tool has kill authority and runs with elevated privileges. These are distinct from general engineering challenges — getting these wrong makes the machine less safe, not just less accurate.</p>
+
+      <div class="issue severity-high">
+        <div class="issue-title" style="margin-bottom:8px">The DLP agent itself is a kill target <span class="issue-sev" style="float:right">High</span></div>
+        <p>Real exfiltration malware can check the process list and kill the monitor before it acts, especially if it runs as a visible console process under a normal user account.</p>
+        <div class="mitigation"><span class="label">Mitigation (designed, not built):</span> run as a Windows service under a protected account; sub-agents and orchestrator watch each other and restart on unexpected death; an unexpected agent death is itself logged as a suspicious event.</div>
+      </div>
+
+      <div class="issue severity-high">
+        <div class="issue-title" style="margin-bottom:8px">Kill authority is a privilege-escalation target <span class="issue-sev" style="float:right">High</span></div>
+        <p>The orchestrator needs elevated rights to terminate arbitrary processes. If the DLP tool itself is compromised, an attacker gains a SYSTEM-level process killer.</p>
+        <div class="mitigation"><span class="label">Mitigation (designed, not built):</span> scope elevation to only the kill action where possible; write kill actions to a log location the agent process itself cannot modify.</div>
+      </div>
+
+      <div class="issue severity-high">
+        <div class="issue-title" style="margin-bottom:8px">Process-name spoofing of protected software <span class="issue-sev" style="float:right">High — mitigated</span></div>
+        <p>Malware naming itself <code>MsMpEng.exe</code> or <code>svchost.exe</code> could otherwise inherit protection meant for the real thing.</p>
+        <div class="mitigation"><span class="label">Mitigation (built &amp; tested):</span> protection for commonly-spoofed names requires executable-path verification against the expected install directory. Unverifiable or mismatched paths are treated as NOT protected and as elevated suspicion — confirmed in <code>test_masquerading_fake_defender_not_protected_and_escalated</code>.</div>
+      </div>
+
+      <div class="issue severity-med">
+        <div class="issue-title" style="margin-bottom:8px">IPC between agents is unauthenticated <span class="issue-sev" style="float:right">Medium</span></div>
+        <p>Whatever channel sub-agents use to report to the orchestrator (named pipes, sockets) needs to verify reports actually come from the legitimate sibling agent, or a malicious process could spoof an "all clear."</p>
+        <div class="mitigation"><span class="label">Status:</span> not yet designed in detail — flagged as a requirement for the agent-layer build.</div>
+      </div>
+
+      <div class="issue severity-med">
+        <div class="issue-title" style="margin-bottom:8px">Killing security software disables real protection <span class="issue-sev" style="float:right">Medium — mitigated</span></div>
+        <p>A false-positive kill of antivirus/EDR is worse than doing nothing — it leaves the user believing they're protected when they aren't.</p>
+        <div class="mitigation"><span class="label">Mitigation (built &amp; tested):</span> known AV/EDR process names are in the protected registry and vetoed unconditionally, confirmed in <code>test_real_av_vendor_no_path_check_needed</code> and the Defender test above. The list is a starting set and not exhaustive — needs expansion to match the actual AV in use before relying on it.</div>
+      </div>
+
+      <div class="issue severity-med">
+        <div class="issue-title" style="margin-bottom:8px">Whitelist/config files can be tampered with <span class="issue-sev" style="float:right">Medium</span></div>
+        <p>If a malicious process can write to the whitelist, it can add itself and bypass detection entirely.</p>
+        <div class="mitigation"><span class="label">Status:</span> not yet designed — needs integrity verification (hash/signature) on config files, deferred per project sequencing.</div>
+      </div>
+    </section>
+
+    <!-- BUILD STATUS -->
+    <section id="status">
+      <h2><span class="num">09</span>Build Status</h2>
+      <p class="section-intro">Full inventory, so this document doesn't overstate what exists.</p>
+
+      <div class="status-legend">
+        <span class="legend-label">Legend</span>
+        <span class="status built">Built &amp; tested</span>
+        <span class="status designed">Designed, not built</span>
+        <span class="status gap">Open gap / unscoped</span>
+      </div>
+
+      <table>
+        <thead><tr><th>Component</th><th>Status</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="proc">core/risk_engine.py</td><td><span class="status built">Built</span></td><td>12/12 unit tests passing, OS-independent</td></tr>
+          <tr><td class="proc">core/protected_processes.py</td><td><span class="status built">Built</span></td><td>Path-verified veto, masquerade detection, tested</td></tr>
+          <tr><td class="proc">CPU / RAM / Memory / Network agents</td><td><span class="status designed">Designed</span></td><td>Architecture defined; psutil/pywin32 implementation not written</td></tr>
+          <tr><td class="proc">Orchestrator (process supervision)</td><td><span class="status designed">Designed</span></td><td>Logic sketched; actual spawn/monitor/kill calls unbuilt and unverified — no Windows machine available in this environment</td></tr>
+          <tr><td class="proc">Admin whitelist/blacklist module</td><td><span class="status designed">Designed</span></td><td>Data model sketched in Section 6, not implemented</td></tr>
+          <tr><td class="proc">Per-process network attribution</td><td><span class="status gap">Gap</span></td><td>Needs ETW or equivalent — not scoped in detail</td></tr>
+          <tr><td class="proc">Per-app disk access blocking</td><td><span class="status gap">Gap</span></td><td>Needs minifilter driver or ACL-based approximation — separate effort</td></tr>
+          <tr><td class="proc">Self-protection / anti-tampering</td><td><span class="status gap">Gap</span></td><td>Service mode, mutual watchdog, IPC auth — deferred</td></tr>
+          <tr><td class="proc">Trained detection model</td><td><span class="status gap">Gap</span></td><td>Blocked on having real logged data to train from</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>
+      generated from project files in core/risk_engine.py and core/protected_processes.py · prototype documentation, not a production security claim
+    </footer>
+  </main>
+</div>
+
+<script>
+  // ---------- TOC active-link tracking ----------
+  const sections = document.querySelectorAll('main section');
+  const links = document.querySelectorAll('nav.toc a');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const id = e.target.getAttribute('id');
+        const link = document.querySelector(`nav.toc a[href="#${id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -75% 0px' });
+  sections.forEach(s => io.observe(s));
+
+  // ---------- Live decision demo ----------
+  // Mirrors core/risk_engine.py + core/protected_processes.py exactly.
+
+  const CPU_THRESH = 85.0, RAM_THRESH = 1500.0, MEM_THRESH = 1500.0, NET_THRESH = 500.0;
+  const WEIGHTS = { cpu: 0.15, ram: 0.15, memory: 0.10, network: 0.60 };
+
+  const PROTECTED_PATH_NAMES = {
+    'msmpeng.exe': ['windows defender', 'platform'],
+    'svchost.exe': ['windows\\system32', 'windows\\syswow64'],
+  };
+  const SECURITY_NO_PATH_NEEDED = new Set(['sentinelagent.exe', 'avp.exe', 'csfalconservice.exe']);
+  const CORE_OR_SECURITY = new Set(['msmpeng.exe', 'svchost.exe', 'sentinelagent.exe', 'avp.exe', 'csfalconservice.exe']);
+
+  function isProtected(name, pathTag) {
+    const n = name.toLowerCase();
+    if (!CORE_OR_SECURITY.has(n)) return { protected: false, reason: '' };
+    if (n in PROTECTED_PATH_NAMES) {
+      if (pathTag === 'unknown' || !pathTag) {
+        return { protected: false, reason: `name matches protected target '${n}' but path unverifiable — NOT protected` };
+      }
+      if (pathTag === 'defender' && n === 'msmpeng.exe') return { protected: true, reason: 'verified Windows Defender path' };
+      if (pathTag === 'system32' && n === 'svchost.exe') return { protected: true, reason: 'verified System32 path' };
+      return { protected: false, reason: `process named '${n}' running from unexpected path — likely masquerading` };
+    }
+    return { protected: true, reason: `known security software (${n})` };
+  }
+
+  function masqueradeSuspected(name, pathTag) {
+    const n = name.toLowerCase();
+    if (!(n in PROTECTED_PATH_NAMES)) return false;
+    if (pathTag === 'unknown' || !pathTag) return true;
+    if (n === 'msmpeng.exe') return pathTag !== 'defender';
+    if (n === 'svchost.exe') return pathTag !== 'system32';
+    return false;
+  }
+
+  function evaluate() {
+    const procSelect = document.getElementById('procName').value;
+    const [rawName, pathTag] = procSelect.split('|');
+    const procName = rawName;
+
+    const cpu = parseFloat(document.getElementById('cpu').value);
+    const ram = parseFloat(document.getElementById('ram').value);
+    const net = parseFloat(document.getElementById('net').value);
+    const destKnown = document.getElementById('destKnown').checked;
+    const isWhitelisted = document.getElementById('isWhitelisted').checked;
+
+    document.getElementById('cpuVal').textContent = cpu + '%';
+    document.getElementById('ramVal').textContent = ram;
+    document.getElementById('netVal').textContent = net;
+    document.getElementById('procNameLabel').textContent = rawName;
+
+    let score = 0;
+    const reasons = [];
+    let networkCritical = false;
+
+    if (cpu >= CPU_THRESH) { score += WEIGHTS.cpu; reasons.push({ text: `cpu threshold exceeded (${cpu}%)`, type: 'flag' }); }
+    if (ram >= RAM_THRESH) { score += WEIGHTS.ram; reasons.push({ text: `ram threshold exceeded (${ram}MB)`, type: 'flag' }); }
+    if (net >= NET_THRESH) {
+      score += WEIGHTS.network;
+      reasons.push({ text: `network threshold exceeded (${net}KB/s)`, type: 'flag' });
+      if (!destKnown && !isWhitelisted) {
+        networkCritical = true;
+        reasons.push({ text: 'unrecognized network destination', type: 'flag' });
+      }
+    }
+
+    if (isWhitelisted) {
+      score *= 0.2;
+      reasons.push({ text: 'process is whitelisted — risk dampened', type: 'protect' });
+    }
+
+    score = Math.min(score, 1.0);
+
+    let shouldKill = !isWhitelisted && networkCritical && score >= 0.6;
+    if (shouldKill) reasons.push({ text: 'AUTO-KILL: non-whitelisted, high-confidence exfiltration pattern', type: 'kill' });
+
+    const prot = isProtected(procName, pathTag);
+    let vetoed = false;
+    if (shouldKill && prot.protected) {
+      vetoed = true;
+      shouldKill = false;
+      reasons.push({ text: `KILL VETOED — ${prot.reason}`, type: 'veto' });
+    }
+
+    if (masqueradeSuspected(procName, pathTag)) {
+      reasons.push({ text: 'SUSPECTED MASQUERADE: protected name, unverified/wrong path — elevated risk, not exempt', type: 'flag' });
+      if (!prot.protected && !shouldKill && networkCritical) {
+        shouldKill = true;
+        reasons.push({ text: 'AUTO-KILL: masquerading name + active exfiltration pattern', type: 'kill' });
+      }
+    }
+
+    // ---- render ----
+    const badge = document.getElementById('verdictBadge');
+    const scoreBar = document.getElementById('scoreBar');
+    const scoreText = document.getElementById('scoreText');
+    scoreText.textContent = score.toFixed(2);
+    scoreBar.style.width = (score * 100) + '%';
+
+    if (shouldKill) {
+      badge.textContent = 'TERMINATE';
+      badge.className = 'verdict-badge kill';
+      scoreBar.style.background = '#E0625C';
+    } else if (vetoed) {
+      badge.textContent = 'VETOED — PROTECTED';
+      badge.className = 'verdict-badge vetoed';
+      scoreBar.style.background = '#E0A94F';
+    } else if (score >= 0.3) {
+      badge.textContent = 'MONITOR / ESCALATE';
+      badge.className = 'verdict-badge monitor';
+      scoreBar.style.background = '#4FD2E0';
+    } else {
+      badge.textContent = 'NO RISK';
+      badge.className = 'verdict-badge none';
+      scoreBar.style.background = '#5FC98D';
+    }
+
+    const list = document.getElementById('reasonsList');
+    list.innerHTML = '';
+    if (reasons.length === 0) {
+      list.innerHTML = '<li class="empty">no thresholds exceeded</li>';
+    } else {
+      reasons.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = r.text;
+        if (r.type === 'kill') li.className = 'kill-reason';
+        if (r.type === 'veto') li.className = 'veto-reason';
+        if (r.type === 'protect') li.className = 'protect-reason';
+        list.appendChild(li);
+      });
+    }
+  }
+
+  ['cpu','ram','net','destKnown','isWhitelisted','procName'].forEach(id => {
+    document.getElementById(id).addEventListener('input', evaluate);
+  });
+  evaluate();
+</script>
+
+</body>
+</html>
